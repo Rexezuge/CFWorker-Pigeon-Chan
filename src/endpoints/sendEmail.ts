@@ -185,9 +185,11 @@ function createEmail(sender: string, recipient: string, subject: string, body: s
         body,
     ].join("\r\n");
 
-    return Buffer.from(email)
-        .toString("base64")
+    // 兼容 Cloudflare Workers 和浏览器环境
+    const encodedEmail = new TextEncoder().encode(email);
+    const base64Email = btoa(String.fromCharCode(...encodedEmail))
         .replace(/\+/g, "-")
-        .replace(/\//g, "_")
-        .replace(/=+$/, "");
+        .replace(/\//g, "_");
+
+    return base64Email;
 }
