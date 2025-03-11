@@ -15,7 +15,7 @@ const openapi = fromHono(app, { docs_url: "/" });
 openapi.post("/api/register", RegisterUser);       // 用户注册
 openapi.post("/api/:api_key/bind-oauth", BindOAuth);// 绑定 OAuth
 openapi.post("/api/generate-api-key", GenerateApiKey); // 生成 API Key
-openapi.post("/api/send-email", SendEmail);        // 发送邮件（需要 API Key）
+openapi.post("/api/:api_key/send-email", SendEmail);
 
 // 导出 Hono 应用
 export default app;
