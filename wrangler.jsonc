@@ -7,6 +7,8 @@
 	"name": "pigeon-chan",
 	"main": "src/index.ts",
 	"compatibility_date": "2025-03-11",
+	"preview_urls": false,
+	"workers_dev": true,
 	"observability": {
 		"enabled": true,
 		"head_sampling_rate": 1
@@ -22,9 +24,9 @@
 	 */
 	"d1_databases": [
 		{
-			"binding": "DB",
+			"binding": "DB_USERS",
 			"database_name": "users_db",
-			"database_id": "your-d1-database-id"
+			"database_id": "3fe4a5d0-6f28-4cb4-b61c-e0f0b654811b"
 		}
 	],
 	/**
