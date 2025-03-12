@@ -1,11 +1,10 @@
 import { OpenAPIRoute } from "chanfana";
 import { z } from "zod";
-import { generateApiKey } from "../../../utils";
 
-export class GenerateApiKey extends OpenAPIRoute {
+export class DeleteApiKey extends OpenAPIRoute {
     schema = {
         tags: ["User/API_Key"],
-        summary: "Generate a unique API Key for the user",
+        summary: "Delete the user's API Key",
         request: {
             body: {
                 content: {
@@ -19,10 +18,11 @@ export class GenerateApiKey extends OpenAPIRoute {
             },
         },
         responses: {
-            "200": { description: "API key generated successfully" },
+            "200": { description: "API key deleted successfully" },
             "400": { description: "Invalid request body" },
             "401": { description: "Invalid email or password" },
-            "500": { description: "Failed to generate API key" },
+            "404": { description: "API key not found" },
+            "500": { description: "Failed to delete API key" },
         },
     };
 
@@ -48,28 +48,25 @@ export class GenerateApiKey extends OpenAPIRoute {
             }
 
             const user_id = userResults[0].id;
-            let apiKey = userResults[0].api_key;
+            const apiKey = userResults[0].api_key;
 
-            // 如果 API Key 已存在，直接返回
-            if (apiKey) {
-                return c.json({ message: "API key already exists" }, 400);
+            // 如果 API Key 不存在，返回错误
+            if (!apiKey) {
+                return c.json({ error: "API key not found" }, 404);
             }
 
-            // 生成新的 API Key
-            apiKey = generateApiKey();
-
-            // 更新数据库
+            // 更新数据库，删除 API Key
             await c.env.DB.prepare(
-                "UPDATE users SET api_key = ? WHERE id = ?"
-            ).bind(apiKey, user_id).run();
+                "UPDATE users SET api_key = NULL WHERE id = ?"
+            ).bind(user_id).run();
 
-            return c.json({ message: "API key generated successfully", api_key: apiKey }, 200);
+            return c.json({ message: "API key deleted successfully" }, 200);
         } catch (error) {
             if (error instanceof z.ZodError) {
                 return c.json({ error: "Invalid input data", details: error.errors }, 400);
             }
-            console.error("Error generating API key:", error);
-            return c.json({ error: "Failed to generate API key" }, 500);
+            console.error("Error deleting API key:", error);
+            return c.json({ error: "Failed to delete API key" }, 500);
         }
     }
 }
