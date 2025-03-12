@@ -25,13 +25,14 @@ export class BindOAuth extends OpenAPIRoute {
             "200": { description: "OAuth credentials bound successfully" },
             "400": { description: "Invalid request body" },
             "401": { description: "Invalid API key" },
+            "409": { description: "OAuth credentials already exist" },
             "500": { description: "Failed to bind OAuth credentials" },
         },
     };
 
     async handle(c) {
         try {
-            // 从路径参数获取 API Key
+            // 获取 API Key
             const api_key = c.req.param("api_key");
             if (!api_key) {
                 return c.json({ error: "API key is required" }, 400);
@@ -57,6 +58,15 @@ export class BindOAuth extends OpenAPIRoute {
             }
 
             const user_id = userResults[0].id;
+
+            // 检查 OAuth 绑定是否已存在
+            const { results: existingOAuth } = await c.env.DB.prepare(
+                "SELECT id FROM oauth WHERE user_id = ? AND provider = ?"
+            ).bind(user_id, provider).all();
+
+            if (existingOAuth.length > 0) {
+                return c.json({ error: "OAuth credentials already exist" }, 409);
+            }
 
             // 绑定 OAuth
             await c.env.DB.prepare(
