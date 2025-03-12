@@ -1,4 +1,5 @@
 import { OpenAPIRoute } from "chanfana";
+import { hashPassword } from "utils";
 import { z } from "zod";
 
 export class RegisterUser extends OpenAPIRoute {
@@ -35,7 +36,7 @@ export class RegisterUser extends OpenAPIRoute {
             // 校验数据格式
             const validatedData = this.schema.request.body.content["application/json"].schema.parse(requestBody);
             const { email, password } = validatedData;
-            const passwordHash = password;  // 这里应该使用加密方式存储密码
+            const passwordHash = await hashPassword(password);
 
             // 尝试插入用户数据
             await c.env.DB.prepare(

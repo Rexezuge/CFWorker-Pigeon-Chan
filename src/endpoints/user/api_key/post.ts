@@ -1,6 +1,6 @@
 import { OpenAPIRoute } from "chanfana";
 import { z } from "zod";
-import { generateApiKey } from "../../../utils";
+import { comparePassword, generateApiKey } from "../../../utils";
 
 export class GenerateApiKey extends OpenAPIRoute {
     schema = {
@@ -43,7 +43,8 @@ export class GenerateApiKey extends OpenAPIRoute {
                 "SELECT id, password, api_key FROM users WHERE email = ?"
             ).bind(email).all();
 
-            if (userResults.length === 0 || userResults[0].password !== password) {
+            const isMatch = await comparePassword(password, userResults[0].password);
+            if (userResults.length === 0 || !isMatch) {
                 return c.json({ error: "Invalid email or password" }, 401);
             }
 
