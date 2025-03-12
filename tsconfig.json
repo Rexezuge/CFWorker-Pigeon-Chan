@@ -7,7 +7,9 @@
 		"sourceMap": true,
 		"esModuleInterop": true,
 		"inlineSourceMap": false,
-		"lib": ["esnext"],
+		"lib": [
+			"esnext"
+		],
 		"listEmittedFiles": false,
 		"listFiles": false,
 		"moduleResolution": "node",
@@ -27,6 +29,13 @@
 			"@cloudflare/workers-types/2023-07-01"
 		]
 	},
-	"exclude": ["node_modules", "dist", "tests"],
-	"include": ["src", "scripts"]
+	"exclude": [
+		"node_modules",
+		"dist",
+		"tests"
+	],
+	"include": [
+		"src",
+		"scripts"
+	]
 }

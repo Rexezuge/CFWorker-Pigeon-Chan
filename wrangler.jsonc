@@ -4,7 +4,7 @@
  */
 {
 	"$schema": "node_modules/wrangler/config-schema.json",
-	"name": "pigeon-chan",
+	"name": "mail-meow",
 	"main": "src/index.ts",
 	"compatibility_date": "2025-03-11",
 	"preview_urls": false,
@@ -25,7 +25,7 @@
 	"d1_databases": [
 		{
 			"binding": "DB",
-			"database_name": "users_db",
+			"database_name": "mail_meow_db",
 			"database_id": "3fe4a5d0-6f28-4cb4-b61c-e0f0b654811b"
 		}
 	],
@@ -33,9 +33,7 @@
 	 * Environment Variables
 	 * https://developers.cloudflare.com/workers/wrangler/configuration/#environment-variables
 	 */
-	"vars": {
-		"EMAIL_SENDER": ""
-	}
+	"vars": {}
 	/**
 	 * Note: Use secrets to store sensitive data.
 	 * https://developers.cloudflare.com/workers/configuration/secrets/
