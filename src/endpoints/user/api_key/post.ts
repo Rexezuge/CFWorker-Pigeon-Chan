@@ -38,31 +38,33 @@ export class GenerateApiKey extends OpenAPIRoute {
             const validatedData = this.schema.request.body.content["application/json"].schema.parse(requestBody);
             const { email, password } = validatedData;
 
-            // 查询用户信息，包括 API Key
-            const { results: userResults } = await c.env.DB.prepare(
-                "SELECT id, password, api_key FROM users WHERE email = ?"
-            ).bind(email).all();
+            // 查询用户信息，仅获取第一个用户
+            const user = await c.env.DB.prepare(
+                "SELECT id, password, api_key FROM users WHERE email = ? LIMIT 1"
+            ).bind(email).first();
 
-            const isMatch = await comparePassword(password, userResults[0].password);
-            if (userResults.length === 0 || !isMatch) {
+            if (!user) {
                 return c.json({ error: "Invalid email or password" }, 401);
             }
 
-            const user_id = userResults[0].id;
-            let apiKey = userResults[0].api_key;
+            // 验证密码
+            const isMatch = await comparePassword(password, user.password);
+            if (!isMatch) {
+                return c.json({ error: "Invalid email or password" }, 401);
+            }
 
             // 如果 API Key 已存在，直接返回
-            if (apiKey) {
-                return c.json({ message: "API key already exists" }, 400);
+            if (user.api_key) {
+                return c.json({ message: "API key already exists", api_key: user.api_key }, 200);
             }
 
             // 生成新的 API Key
-            apiKey = generateApiKey();
+            const apiKey = generateApiKey();
 
             // 更新数据库
             await c.env.DB.prepare(
                 "UPDATE users SET api_key = ? WHERE id = ?"
-            ).bind(apiKey, user_id).run();
+            ).bind(apiKey, user.id).run();
 
             return c.json({ message: "API key generated successfully", api_key: apiKey }, 200);
         } catch (error) {

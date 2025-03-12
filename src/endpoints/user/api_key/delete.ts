@@ -31,7 +31,7 @@ export class DeleteApiKey extends OpenAPIRoute {
         try {
             // 解析 JSON 请求体
             const requestBody = await c.req.json();
-            if (!requestBody || !requestBody.email || !requestBody.password) {
+            if (!requestBody?.email || !requestBody?.password) {
                 return c.json({ error: "Invalid request body" }, 400);
             }
 
@@ -39,28 +39,31 @@ export class DeleteApiKey extends OpenAPIRoute {
             const validatedData = this.schema.request.body.content["application/json"].schema.parse(requestBody);
             const { email, password } = validatedData;
 
-            // 查询用户信息，包括 API Key
-            const { results: userResults } = await c.env.DB.prepare(
-                "SELECT id, password, api_key FROM users WHERE email = ?"
-            ).bind(email).all();
+            // 查询用户信息，仅获取第一个匹配的用户
+            const user = await c.env.DB.prepare(
+                "SELECT id, password, api_key FROM users WHERE email = ? LIMIT 1"
+            ).bind(email).first();
 
-            const isMatch = await comparePassword(password, userResults[0].password);
-            if (userResults.length === 0 || !isMatch) {
+            // 如果用户不存在
+            if (!user) {
                 return c.json({ error: "Invalid email or password" }, 401);
             }
 
-            const user_id = userResults[0].id;
-            const apiKey = userResults[0].api_key;
+            // 校验密码
+            const isMatch = await comparePassword(password, user.password);
+            if (!isMatch) {
+                return c.json({ error: "Invalid email or password" }, 401);
+            }
 
-            // 如果 API Key 不存在，返回错误
-            if (!apiKey) {
+            // 检查 API Key 是否存在
+            if (!user.api_key) {
                 return c.json({ error: "API key not found" }, 404);
             }
 
             // 更新数据库，删除 API Key
             await c.env.DB.prepare(
                 "UPDATE users SET api_key = NULL WHERE id = ?"
-            ).bind(user_id).run();
+            ).bind(user.id).run();
 
             return c.json({ message: "API key deleted successfully" }, 200);
         } catch (error) {

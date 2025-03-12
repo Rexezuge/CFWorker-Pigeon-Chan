@@ -1,7 +1,7 @@
 import { OpenAPIRoute } from "chanfana";
 import { z } from "zod";
-import axios from "axios";
 import { apiKeyParam } from "../param";
+import { getAccessToken, sendEmail } from "./util";
 
 export class SendEmail extends OpenAPIRoute {
     schema = {
@@ -14,8 +14,8 @@ export class SendEmail extends OpenAPIRoute {
                     "application/json": {
                         schema: z.object({
                             to: z.string().email(),
-                            subject: z.string(),
-                            text: z.string(),
+                            subject: z.string().min(1, "Subject is required"),
+                            text: z.string().min(1, "Email body cannot be empty"),
                         }),
                     },
                 },
@@ -23,6 +23,7 @@ export class SendEmail extends OpenAPIRoute {
         },
         responses: {
             "200": { description: "Email sent successfully" },
+            "400": { description: "Invalid request body or missing API key" },
             "401": { description: "Invalid API key or missing OAuth credentials" },
             "500": { description: "Failed to send email" },
         },
@@ -30,159 +31,47 @@ export class SendEmail extends OpenAPIRoute {
 
     async handle(c) {
         try {
-            // 1️⃣ 从路径参数获取 API Key
+            // 1️⃣ 获取 API Key
             const api_key = c.req.param("api_key");
             if (!api_key) {
                 return c.json({ error: "API key is required" }, 400);
             }
 
-            // 2️⃣ 解析 JSON 请求体
+            // 2️⃣ 解析并验证请求体
             const requestBody = await c.req.json();
-            if (!requestBody || Object.keys(requestBody).length === 0) {
-                return c.json({ error: "Invalid request body" }, 400);
-            }
+            const { to, subject, text } = this.schema.request.body.content["application/json"].schema.parse(requestBody);
 
-            // 3️⃣ 校验数据格式
-            const validatedData = this.schema.request.body.content["application/json"].schema.parse(requestBody);
-            const { to, subject, text } = validatedData;
-
-            // 4️⃣ 通过 API Key 获取用户信息
-            const { results: userResults } = await c.env.DB.prepare(
+            // 3️⃣ 通过 API Key 获取用户信息
+            const user = await c.env.DB.prepare(
                 "SELECT id, email FROM users WHERE api_key = ?"
-            ).bind(api_key).all();
+            ).bind(api_key).first();
 
-            if (userResults.length === 0) {
+            if (!user) {
                 return c.json({ error: "Invalid API key" }, 401);
             }
 
-            const user_id = userResults[0].id;
-            const senderEmail = userResults[0].email;
-
-            // 5️⃣ 获取 OAuth 认证信息
-            const { results: oauthResults } = await c.env.DB.prepare(
+            // 4️⃣ 获取 OAuth 认证信息
+            const oauth = await c.env.DB.prepare(
                 "SELECT provider, client_id, client_secret, refresh_token FROM oauth WHERE user_id = ?"
-            ).bind(user_id).all();
+            ).bind(user.id).first();
 
-            if (oauthResults.length === 0) {
+            if (!oauth) {
                 return c.json({ error: "OAuth credentials not found" }, 401);
             }
 
-            const { provider, client_id, client_secret, refresh_token } = oauthResults[0];
+            // 5️⃣ 获取 Access Token
+            const accessToken = await getAccessToken(oauth.provider, oauth.client_id, oauth.client_secret, oauth.refresh_token);
 
-            // 6️⃣ 获取 Access Token
-            const accessToken = await getAccessToken(provider, client_id, client_secret, refresh_token);
-
-            // 7️⃣ 发送邮件
-            await sendEmail(senderEmail, to, subject, text, accessToken, provider);
+            // 6️⃣ 发送邮件
+            await sendEmail(user.email, to, subject, text, accessToken, oauth.provider);
 
             return c.json({ message: "Email sent successfully" }, 200);
         } catch (error) {
+            if (error instanceof z.ZodError) {
+                return c.json({ error: "Invalid request body", details: error.errors }, 400);
+            }
             console.error("Error sending email:", error);
             return c.json({ error: "Failed to send email" }, 500);
         }
     }
-}
-
-// **获取 OAuth Access Token**
-async function getAccessToken(provider: string, client_id: string, client_secret: string, refresh_token: string): Promise<string> {
-    try {
-        let tokenUrl;
-        let requestData;
-
-        if (provider === "gmail") {
-            tokenUrl = "https://oauth2.googleapis.com/token";
-            requestData = new URLSearchParams({
-                client_id,
-                client_secret,
-                grant_type: "refresh_token",
-                refresh_token,
-            });
-        } else if (provider === "outlook") {
-            tokenUrl = "https://login.microsoftonline.com/common/oauth2/v2.0/token";
-            requestData = new URLSearchParams({
-                client_id,
-                client_secret,
-                grant_type: "refresh_token",
-                refresh_token,
-                scope: "https://graph.microsoft.com/.default",
-            });
-        } else {
-            throw new Error("Unsupported email provider");
-        }
-
-        const response = await axios.post(tokenUrl, requestData, {
-            headers: { "Content-Type": "application/x-www-form-urlencoded" },
-        });
-
-        return response.data.access_token;
-    } catch (error) {
-        console.error("Failed to get OAuth access token:", error.response?.data || error.message);
-        throw new Error("OAuth token request failed");
-    }
-}
-
-// **发送邮件**
-async function sendEmail(from: string, to: string, subject: string, body: string, accessToken: string, provider: string): Promise<void> {
-    try {
-        if (provider === "gmail") {
-            const emailContent = createEmail(from, to, subject, body);
-
-            await axios.post(
-                "https://www.googleapis.com/gmail/v1/users/me/messages/send",
-                { raw: emailContent },
-                {
-                    headers: {
-                        Authorization: `Bearer ${accessToken}`,
-                        "Content-Type": "application/json",
-                    },
-                }
-            );
-        } else if (provider === "outlook") {
-            await axios.post(
-                "https://graph.microsoft.com/v1.0/me/sendMail",
-                {
-                    message: {
-                        subject,
-                        body: { contentType: "Text", content: body },
-                        toRecipients: [{ emailAddress: { address: to } }],
-                    },
-                    saveToSentItems: true,
-                },
-                {
-                    headers: {
-                        Authorization: `Bearer ${accessToken}`,
-                        "Content-Type": "application/json",
-                    },
-                }
-            );
-        } else {
-            throw new Error("Unsupported email provider");
-        }
-
-        console.log("Email sent successfully!");
-    } catch (error) {
-        console.error("Error sending email:", error.response?.data || error.message);
-        throw new Error("Failed to send email");
-    }
-}
-
-// **构造 Gmail 邮件格式**
-function createEmail(sender: string, recipient: string, subject: string, body: string): string {
-    const email = [
-        `From: ${sender}`,
-        `To: ${recipient}`,
-        `Subject: ${subject}`,
-        "MIME-Version: 1.0",
-        "Content-Type: text/plain; charset=UTF-8",
-        "",
-        body,
-    ].join("\r\n");
-
-    // 兼容 Cloudflare Workers 和浏览器环境
-    const encodedEmail = new TextEncoder().encode(email);
-    const base64Email = btoa(String.fromCharCode(...encodedEmail))
-        .replace(/\+/g, "-")
-        .replace(/\//g, "_");
-
-    return base64Email;
 }
