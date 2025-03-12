@@ -7,6 +7,7 @@ import { GenerateApiKey } from "./endpoints/user/api_key/post";
 import { DeleteBoundOAuth } from "endpoints/:api_key/oauth/delete";
 import { RebindOAuth } from "endpoints/:api_key/oauth/put";
 import { DeleteApiKey } from "endpoints/user/api_key/delete";
+import { DeleteUser } from "endpoints/user/delete";
 
 // 启动 Hono 应用
 const app = new Hono();
@@ -16,6 +17,7 @@ const openapi = fromHono(app, { docs_url: "/" });
 
 // 注册 API 端点
 openapi.post("/api/user", RegisterUser);       // 用户注册
+openapi.delete("/api/user", DeleteUser);       // 用户注册
 openapi.post("/api/user/api_key", GenerateApiKey); // 生成 API Key
 openapi.delete("/api/user/api_key", DeleteApiKey); // 生成 API Key
 
