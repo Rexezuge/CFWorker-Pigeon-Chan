@@ -1,19 +1,11 @@
 import { OpenAPIRoute } from "chanfana";
-import { z } from "zod";
+import { apiKeyParam } from "../param";
 
 export class DeleteBoundOAuth extends OpenAPIRoute {
     schema = {
         tags: ["OAuth"],
         summary: "Delete all bound OAuth credentials for a user",
-        parameters: [
-            {
-                name: "api_key",
-                in: "path",
-                required: true,
-                schema: { type: "string" },
-                description: "User's API Key",
-            },
-        ],
+        parameters: [apiKeyParam],
         responses: {
             "200": { description: "All OAuth credentials deleted successfully" },
             "400": { description: "Invalid request parameters" },

@@ -1,19 +1,12 @@
 import { OpenAPIRoute } from "chanfana";
 import { z } from "zod";
+import { apiKeyParam } from "../param";
 
 export class RebindOAuth extends OpenAPIRoute {
     schema = {
         tags: ["OAuth"],
         summary: "Rebind OAuth credentials for sending emails",
-        parameters: [
-            {
-                name: "api_key",
-                in: "path",
-                required: true,
-                schema: { type: "string" },
-                description: "User's API Key",
-            },
-        ],
+        parameters: [apiKeyParam],
         request: {
             body: {
                 content: {

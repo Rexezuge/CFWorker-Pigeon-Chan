@@ -1,20 +1,13 @@
 import { OpenAPIRoute } from "chanfana";
 import { z } from "zod";
 import axios from "axios";
+import { apiKeyParam } from "../param";
 
 export class SendEmail extends OpenAPIRoute {
     schema = {
         tags: ["Email"],
         summary: "Send an email using user's OAuth credentials",
-        parameters: [
-            {
-                name: "api_key",
-                in: "path",
-                required: true,
-                schema: { type: "string" },
-                description: "User's API Key",
-            },
-        ],
+        parameters: [apiKeyParam],
         request: {
             body: {
                 content: {
