@@ -1,10 +1,11 @@
 import { fromHono } from "chanfana";
 import { Hono } from "hono";
-import { SendEmail } from "./endpoints/sendEmail";
-import { RegisterUser } from "./endpoints/registerUser";
-import { BindOAuth } from "./endpoints/bindOAuth";
-import { GenerateApiKey } from "./endpoints/generateApiKey";
-import { DeleteBoundOAuth } from "endpoints/deleteBoundOAuth";
+import { SendEmail } from "./endpoints/:api_key/email/post";
+import { RegisterUser } from "./endpoints/user/post";
+import { BindOAuth } from "./endpoints/:api_key/oauth/post";
+import { GenerateApiKey } from "./endpoints/user/api_key/post";
+import { DeleteBoundOAuth } from "endpoints/:api_key/oauth/delete";
+import { RebindOAuth } from "endpoints/:api_key/oauth/put";
 
 // 启动 Hono 应用
 const app = new Hono();
@@ -13,11 +14,13 @@ const app = new Hono();
 const openapi = fromHono(app, { docs_url: "/" });
 
 // 注册 API 端点
-openapi.post("/api/register", RegisterUser);       // 用户注册
+openapi.post("/api/user", RegisterUser);       // 用户注册
+openapi.post("/api/user/api_key", GenerateApiKey); // 生成 API Key
+
 openapi.post("/api/:api_key/oauth", BindOAuth);// 绑定 OAuth
+openapi.put("/api/:api_key/oauth", RebindOAuth);// 重新绑定 OAuth
 openapi.delete("/api/:api_key/oauth", DeleteBoundOAuth);// 绑定 OAuth
-openapi.post("/api/generate-api-key", GenerateApiKey); // 生成 API Key
-openapi.post("/api/:api_key/send-email", SendEmail);
+openapi.post("/api/:api_key/email", SendEmail);
 
 // 导出 Hono 应用
 export default app;

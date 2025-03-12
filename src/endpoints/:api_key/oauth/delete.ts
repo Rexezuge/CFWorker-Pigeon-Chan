@@ -33,7 +33,7 @@ export class DeleteBoundOAuth extends OpenAPIRoute {
             }
 
             // 获取用户 ID
-            const { results: userResults } = await c.env.DB_USERS.prepare(
+            const { results: userResults } = await c.env.DB.prepare(
                 "SELECT id FROM users WHERE api_key = ?"
             ).bind(api_key).all();
 
@@ -44,7 +44,7 @@ export class DeleteBoundOAuth extends OpenAPIRoute {
             const user_id = userResults[0].id;
 
             // 检查是否存在 OAuth 记录
-            const { results: oauthResults } = await c.env.DB_USERS.prepare(
+            const { results: oauthResults } = await c.env.DB.prepare(
                 "SELECT id FROM oauth WHERE user_id = ?"
             ).bind(user_id).all();
 
@@ -53,7 +53,7 @@ export class DeleteBoundOAuth extends OpenAPIRoute {
             }
 
             // 删除所有 OAuth 记录
-            await c.env.DB_USERS.prepare(
+            await c.env.DB.prepare(
                 "DELETE FROM oauth WHERE user_id = ?"
             ).bind(user_id).run();
 

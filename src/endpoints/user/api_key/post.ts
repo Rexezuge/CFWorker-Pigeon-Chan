@@ -1,10 +1,10 @@
 import { OpenAPIRoute } from "chanfana";
 import { z } from "zod";
-import { generateApiKey } from "../utils";
+import { generateApiKey } from "../../../utils";
 
 export class GenerateApiKey extends OpenAPIRoute {
     schema = {
-        tags: ["Authentication"],
+        tags: ["User/API_Key"],
         summary: "Generate a unique API Key for the user",
         request: {
             body: {
@@ -39,7 +39,7 @@ export class GenerateApiKey extends OpenAPIRoute {
             const { email, password } = validatedData;
 
             // 验证用户身份
-            const { results: userResults } = await c.env.DB_USERS.prepare(
+            const { results: userResults } = await c.env.DB.prepare(
                 "SELECT id, password FROM users WHERE email = ?"
             ).bind(email).all();
 
@@ -53,7 +53,7 @@ export class GenerateApiKey extends OpenAPIRoute {
             const apiKey = generateApiKey();
 
             // 更新数据库
-            await c.env.DB_USERS.prepare(
+            await c.env.DB.prepare(
                 "UPDATE users SET api_key = ? WHERE id = ?"
             ).bind(apiKey, user_id).run();
 

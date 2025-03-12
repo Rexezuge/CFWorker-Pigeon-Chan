@@ -3,7 +3,7 @@ import { z } from "zod";
 
 export class RegisterUser extends OpenAPIRoute {
     schema = {
-        tags: ["Auth"],
+        tags: ["User"],
         summary: "Register a new user",
         request: {
             body: {
@@ -38,7 +38,7 @@ export class RegisterUser extends OpenAPIRoute {
             const passwordHash = password;  // 这里应该使用加密方式存储密码
 
             // 尝试插入用户数据
-            await c.env.DB_USERS.prepare(
+            await c.env.DB.prepare(
                 "INSERT INTO users (email, password) VALUES (?, ?)"
             ).bind(email, passwordHash).run();
 

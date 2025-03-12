@@ -54,7 +54,7 @@ export class SendEmail extends OpenAPIRoute {
             const { to, subject, text } = validatedData;
 
             // 4️⃣ 通过 API Key 获取用户信息
-            const { results: userResults } = await c.env.DB_USERS.prepare(
+            const { results: userResults } = await c.env.DB.prepare(
                 "SELECT id, email FROM users WHERE api_key = ?"
             ).bind(api_key).all();
 
@@ -66,7 +66,7 @@ export class SendEmail extends OpenAPIRoute {
             const senderEmail = userResults[0].email;
 
             // 5️⃣ 获取 OAuth 认证信息
-            const { results: oauthResults } = await c.env.DB_USERS.prepare(
+            const { results: oauthResults } = await c.env.DB.prepare(
                 "SELECT provider, client_id, client_secret, refresh_token FROM oauth WHERE user_id = ?"
             ).bind(user_id).all();
 

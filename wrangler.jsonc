@@ -24,7 +24,7 @@
 	 */
 	"d1_databases": [
 		{
-			"binding": "DB_USERS",
+			"binding": "DB",
 			"database_name": "users_db",
 			"database_id": "3fe4a5d0-6f28-4cb4-b61c-e0f0b654811b"
 		}
