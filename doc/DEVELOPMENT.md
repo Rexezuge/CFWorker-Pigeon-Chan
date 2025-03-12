@@ -11,8 +11,7 @@
 ├── package.json
 ├── README.md
 ├── sql
-│   ├── oauth_db.sql
-│   └── users_db.sql
+│   └── mailmeow_db.sql
 ├── src
 │   ├── endpoints
 │   │   ├── :api_key
@@ -44,6 +43,14 @@
 npm install
 ```
 
+### 登录 Cloudflare
+
+使用 `wrangler` 登录 Cloudflare ：
+
+```
+npx wrangler login
+```
+
 ### 数据库设置
 
 Mail Meow 使用 Cloudflare D1 作为数据库。你需要先创建数据库并导入初始表结构：
@@ -52,16 +59,17 @@ Mail Meow 使用 Cloudflare D1 作为数据库。你需要先创建数据库并�
 2. 使用 `wrangler` CLI 工具导入 SQL 文件：
 
 ```bash
-wrangler d1 execute <DATABASE_NAME> --file ./sql/users_db.sql
-wrangler d1 execute <DATABASE_NAME> --file ./sql/oauth_db.sql
+npx wrangler d1 execute <DATABASE_NAME> --file ./sql/mail_meow_db.sql --remote
 ```
+
+> **注意**：`<DATABASE_NAME>` 是你在 Cloudflare Workers 中创建的 D1 数据库名称。
 
 ### 本地开发
 
 使用 `wrangler` 启动本地开发服务器：
 
 ```bash
-wrangler dev
+npm run dev
 ```
 
 ## 部署 🚀
@@ -75,7 +83,7 @@ wrangler dev
 使用 `wrangler` 部署你的 Worker：
 
 ```bash
-wrangler publish
+npm run deploy
 ```
 
 ## API 文档 📄
